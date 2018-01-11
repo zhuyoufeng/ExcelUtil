@@ -1,6 +1,8 @@
 package com.sargeraswang.util.ExcelUtil;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -11,7 +13,9 @@ import java.util.Map;
  */
 public class ExcelSheet<T> {
     private String sheetName;
-    private Map<String,String> headers;
+    private LinkedHashMap<String,String> mapHeaders;
+    private List<ExcelHeaderCell> definedHeaders;
+    private int headerSize;
     private Collection<T> dataset;
 
     /**
@@ -31,21 +35,20 @@ public class ExcelSheet<T> {
         this.sheetName = sheetName;
     }
 
-    /**
-     * Excel表头
-     * 
-     * @return the headers
-     */
-    public Map<String,String> getHeaders() {
-        return headers;
+    public LinkedHashMap<String, String> getMapHeaders() {
+        return mapHeaders;
     }
 
-    /**
-     * @param headers
-     *            the headers to set
-     */
-    public void setHeaders(Map<String,String> headers) {
-        this.headers = headers;
+    public void setMapHeaders(LinkedHashMap<String, String> mapHeaders) {
+        this.mapHeaders = mapHeaders;
+    }
+
+    public List<ExcelHeaderCell> getDefinedHeaders() {
+        return definedHeaders;
+    }
+
+    public void setDefinedHeaders(List<ExcelHeaderCell> definedHeaders) {
+        this.definedHeaders = definedHeaders;
     }
 
     /**
@@ -65,4 +68,11 @@ public class ExcelSheet<T> {
         this.dataset = dataset;
     }
 
+    public int getHeaderSize() {
+        return headerSize;
+    }
+
+    public void setHeaderSize(int headerSize) {
+        this.headerSize = headerSize;
+    }
 }
