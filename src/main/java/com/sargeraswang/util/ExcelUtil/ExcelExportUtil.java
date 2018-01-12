@@ -150,71 +150,15 @@ public class ExcelExportUtil {
         if (StringUtils.isEmpty(pattern)) {
             pattern = "yyyy-MM-dd";
         }
-        HSSFCellStyle titleStyle = ExcelStyleUtil.createTitleStyle(workbook);
-        HSSFCellStyle headerStyle = ExcelStyleUtil.createHeaderStyle(workbook);
         HSSFCellStyle contentStyle = ExcelStyleUtil.createContentStyle(workbook);
         // 产生表格标题行
-        HSSFRow row = sheet.createRow(0);
-        if (StringUtils.isNotEmpty(title)) {
-            if (headers.size() > 1) {
-                sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, headers.size() - 1));
-            }
-            HSSFCell cell = row.createCell(0);
-            cell.setCellStyle(titleStyle);
-            HSSFRichTextString text = new HSSFRichTextString(title);
-            cell.setCellValue(text);
-
-            row = sheet.createRow(1);
-        }
+        int titleRow = setupTitleRows(workbook, sheet, title, headers.size());
         //标题列数
-        int c = 0;
-        for (Map.Entry<String, String> entry : headers.entrySet()) {
-            HSSFCell cell = row.createCell(c);
-            cell.setCellStyle(headerStyle);
-            HSSFRichTextString text = new HSSFRichTextString(entry.getValue());
-            cell.setCellValue(text);
-            c++;
-        }
+        int headerRow = setupHeaderRows(workbook, sheet, headers, titleRow);
         // 遍历集合数据，产生数据行
-        for (T t : dataset) {
-            try {
-                if (t instanceof Map) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> map = (Map<String, Object>) t;
-                    int cellNum = 0;
-                    //遍历列名
-                    for (Map.Entry<String, String> entry : headers.entrySet()) {
-                        if (!map.containsKey(entry.getKey())) {
-                            LG.error("Map 中 不存在 key [" + entry.getKey() + "]");
-                            continue;
-                        }
-                        Object value = map.get(entry.getKey());
-                        HSSFCell cell = row.createCell(cellNum);
-                        cell.setCellStyle(contentStyle);
-                        cellNum = setCellValue(workbook, cell, value, pattern, cellNum, null, row);
-                        cellNum++;
-                    }
-                } else {
-                    List<FieldForSortting> fields = sortFieldByAnno(t.getClass());
-                    int cellNum = 0;
-                    for (FieldForSortting field1 : fields) {
-                        HSSFCell cell = row.createCell(cellNum);
-                        cell.setCellStyle(contentStyle);
-                        Field field = field1.getField();
-                        field.setAccessible(true);
-                        Object value = field.get(t);
-                        cellNum = setCellValue(workbook, cell, value, pattern, cellNum, field, row);
-                        cellNum++;
-                    }
-                }
-            } catch (Exception e) {
-                LG.error(e.toString(), e);
-            }
-        }
+        setupContentRows(workbook, sheet, headers, dataset, pattern, contentStyle, titleRow + headerRow);
         // 设定自动宽度
-        for (int i = 0; i < headers.size(); i++) {
-            sheet.autoSizeColumn(i, true);
-        }
+        autoSizeColumns(sheet, headers.size());
     }
 
     /**
@@ -230,25 +174,25 @@ public class ExcelExportUtil {
         if (StringUtils.isEmpty(pattern)) {
             pattern = "yyyy-MM-dd";
         }
-        HSSFCellStyle titleStyle = ExcelStyleUtil.createTitleStyle(workbook);
-        HSSFCellStyle headerStyle = ExcelStyleUtil.createHeaderStyle(workbook);
-        HSSFCellStyle contentStyle = ExcelStyleUtil.createContentStyle(workbook);
         // 产生表格标题行
-        int titleRow = 0;
-        if (StringUtils.isNotEmpty(title)) {
-            titleRow = 1;
-            HSSFRow row = sheet.createRow(0);
-            if (headerSize > 1) {
-                CellRangeAddress rangeAddress = new CellRangeAddress(0, 0, 0, headerSize - 1);
-                sheet.addMergedRegion(rangeAddress);
-            }
-            HSSFCell cell = row.createCell(0);
-            cell.setCellStyle(titleStyle);
-            HSSFRichTextString text = new HSSFRichTextString(title);
-            cell.setCellValue(text);
+        int titleRow = setupTitleRows(workbook, sheet, title, headerSize);
+        // 标题行
+        int headerRow = setupHeaderRows(workbook, sheet, headers, headerSize, titleRow);
+        // 遍历集合数据，产生数据行
+        setupContentRows(workbook, sheet, headers, dataset, pattern, (headerRow + titleRow));
+        // 设定自动宽度
+        autoSizeColumns(sheet, headerSize);
+    }
+
+    private static void autoSizeColumns(HSSFSheet sheet, Integer headerSize) {
+        for (int i = 0; i < headerSize; i++) {
+            sheet.autoSizeColumn(i, true);
         }
-        // 标题行转中文
+    }
+
+    private static int setupHeaderRows(HSSFWorkbook workbook, HSSFSheet sheet, List<ExcelHeaderCell> headers, Integer headerSize, int titleRow) {
         int headerRow = 1;
+        HSSFCellStyle headerStyle = ExcelStyleUtil.createHeaderStyle(workbook);
         Map<Integer, HSSFRow> storageMap = new HashMap<>();
         for (ExcelHeaderCell excelHeaderCell : headers) {
             CellRangeAddress cellRangeAddress = excelHeaderCell.createCellRangeAddress(titleRow);
@@ -265,62 +209,84 @@ public class ExcelExportUtil {
                 storageMap.put(excelHeaderCell.getFirstRow(titleRow), tempRow);
             }
             HSSFCell cell = tempRow.createCell(excelHeaderCell.getFirstCol());
-            cell.setCellStyle(headerStyle);
             cell.setCellValue(new HSSFRichTextString(excelHeaderCell.getText()));
         }
-        int contentRow = headerRow + titleRow;
-        for (int i = 0; i < contentRow; i++) {
+        for (int i = titleRow; i < headerRow + titleRow; i++) {
             HSSFRow tempRow = sheet.getRow(i);
             for (int j = 0; j < headerSize; j++) {
                 HSSFCell cell = tempRow.getCell(j);
-                if (cell == null ) {
+                if (cell == null) {
                     cell = tempRow.createCell(j);
                 }
-                if (i < titleRow) {
-                    cell.setCellStyle(titleStyle);
-                } else {
-                    cell.setCellStyle(headerStyle);
+                cell.setCellStyle(headerStyle);
+            }
+        }
+        return headerRow;
+    }
+
+    private static int setupHeaderRows(HSSFWorkbook workbook, HSSFSheet sheet, LinkedHashMap<String, String> headers, int titleRow) {
+        int c = 0;
+        HSSFCellStyle headerStyle = ExcelStyleUtil.createHeaderStyle(workbook);
+        HSSFRow row = sheet.createRow(titleRow);
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            HSSFCell cell = row.createCell(c);
+            cell.setCellStyle(headerStyle);
+            HSSFRichTextString text = new HSSFRichTextString(entry.getValue());
+            cell.setCellValue(text);
+            c++;
+        }
+        return 1;
+    }
+
+    private static int setupTitleRows(HSSFWorkbook workbook, HSSFSheet sheet, String title, Integer headerSize) {
+        HSSFCellStyle titleStyle = ExcelStyleUtil.createTitleStyle(workbook);
+        int titleRow = 0;
+        if (StringUtils.isNotEmpty(title)) {
+            titleRow = 1;
+            HSSFRow row = sheet.createRow(0);
+            if (headerSize > 1) {
+                CellRangeAddress rangeAddress = new CellRangeAddress(0, 0, 0, headerSize - 1);
+                sheet.addMergedRegion(rangeAddress);
+            }
+            HSSFCell cell = row.createCell(0);
+            cell.setCellStyle(titleStyle);
+            HSSFRichTextString text = new HSSFRichTextString(title);
+            cell.setCellValue(text);
+
+            for (int i = 0; i < titleRow; i++) {
+                HSSFRow tempRow = sheet.getRow(i);
+                for (int j = 0; j < headerSize; j++) {
+                    HSSFCell tempCell = tempRow.getCell(j);
+                    if (tempCell == null) {
+                        tempCell = tempRow.createCell(j);
+                    }
+                    tempCell.setCellStyle(titleStyle);
                 }
             }
         }
-        // 遍历集合数据，产生数据行
+        return titleRow;
+    }
+
+    private static <T> void setupContentRows(HSSFWorkbook workbook, HSSFSheet sheet, List<ExcelHeaderCell> headers, Collection<T> dataset, String pattern, int contentRow) {
+        HSSFCellStyle contentStyle = ExcelStyleUtil.createContentStyle(workbook);
         for (T t : dataset) {
             HSSFRow row = sheet.createRow(contentRow++);
             if (t instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> map = (Map<String, Object>) t;
-                int cellNum = 0;
-                //遍历列名
-                for (ExcelHeaderCell excelHeaderCell : headers) {
-                    if (StringUtils.isNotEmpty(excelHeaderCell.getProperty())) {
-                        Object value = map.get(excelHeaderCell.getProperty());
-                        HSSFCell cell = row.createCell(cellNum);
-                        cell.setCellStyle(contentStyle);
-                        cellNum = setCellValue(workbook, cell, value, pattern, cellNum, null, row);
-                        cellNum++;
-                    }
-                }
+                setupCellsFromMap(workbook, row, contentStyle, headers, pattern, (Map<String, Object>) t);
             } else {
-                try {
-                    List<FieldForSortting> fields = sortFieldByAnno(t.getClass());
-                    int cellNum = 0;
-                    for (FieldForSortting field1 : fields) {
-                        HSSFCell cell = row.createCell(cellNum);
-                        cell.setCellStyle(contentStyle);
-                        Field field = field1.getField();
-                        field.setAccessible(true);
-                        Object value = field.get(t);
-                        cellNum = setCellValue(workbook, cell, value, pattern, cellNum, field, row);
-                        cellNum++;
-                    }
-                } catch (IllegalAccessException e) {
-                    LG.error(e.toString(), e);
-                }
+                setupCellsFromBean(workbook, row, contentStyle, pattern, t);
             }
         }
-        // 设定自动宽度
-        for (int i = 0; i < headers.size(); i++) {
-            sheet.autoSizeColumn(i, true);
+    }
+
+    private static <T> void setupContentRows(HSSFWorkbook workbook, HSSFSheet sheet, LinkedHashMap<String, String> headers, Collection<T> dataset, String pattern, HSSFCellStyle contentStyle, int contentRow) {
+        for (T t : dataset) {
+            HSSFRow row = sheet.createRow(contentRow++);
+            if (t instanceof Map) {
+                setupCellsFromMap(workbook, row, contentStyle, headers, pattern, (Map<String, Object>) t);
+            } else {
+                setupCellsFromBean(workbook, row, contentStyle, pattern, t);
+            }
         }
     }
 
@@ -401,6 +367,52 @@ public class ExcelExportUtil {
         return cellNum;
     }
 
+    private static <T> void setupCellsFromMap(HSSFWorkbook workbook, HSSFRow row, HSSFCellStyle contentStyle, LinkedHashMap<String, String> headers, String pattern, Map<String, Object> t) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> map = t;
+        int cellNum = 0;
+        //遍历列名
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            Object value = map.get(entry.getKey());
+            HSSFCell cell = row.createCell(cellNum);
+            cell.setCellStyle(contentStyle);
+            cellNum = setCellValue(workbook, cell, value, pattern, cellNum, null, row);
+            cellNum++;
+        }
+    }
+
+    private static <T> void setupCellsFromMap(HSSFWorkbook workbook, HSSFRow row, HSSFCellStyle contentStyle, List<ExcelHeaderCell> headers, String pattern, Map<String, Object> t) {
+        Map<String, Object> map = t;
+        int cellNum = 0;
+        //遍历列名
+        for (ExcelHeaderCell excelHeaderCell : headers) {
+            if (StringUtils.isNotEmpty(excelHeaderCell.getProperty())) {
+                Object value = map.get(excelHeaderCell.getProperty());
+                HSSFCell cell = row.createCell(cellNum);
+                cell.setCellStyle(contentStyle);
+                cellNum = setCellValue(workbook, cell, value, pattern, cellNum, null, row);
+                cellNum++;
+            }
+        }
+    }
+
+    private static <T> void setupCellsFromBean(HSSFWorkbook workbook, HSSFRow row, HSSFCellStyle contentStyle, String pattern, T t) {
+        try {
+            List<FieldForSortting> fields = sortFieldByAnno(t.getClass());
+            int cellNum = 0;
+            for (FieldForSortting field1 : fields) {
+                HSSFCell cell = row.createCell(cellNum);
+                cell.setCellStyle(contentStyle);
+                Field field = field1.getField();
+                field.setAccessible(true);
+                Object value = field.get(t);
+                cellNum = setCellValue(workbook, cell, value, pattern, cellNum, field, row);
+                cellNum++;
+            }
+        } catch (Exception e) {
+            LG.error(e.toString(), e);
+        }
+    }
     /**
      * 根据annotation的seq排序后的栏位
      */
