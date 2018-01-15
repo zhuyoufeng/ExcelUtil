@@ -10,7 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * The <code>ExcelCell</code><br>
  * 数值型的栏位只能使用Double
- * @see {@link com.sargeraswang.util.ExcelUtil.ExcelUtil#exportExcel}
+ * @see {@link com.sargeraswang.util.ExcelUtil.ExcelExportUtil#exportExcel}
  * @author sargeras.wang
  * @version 1.0, Created at 2013年9月14日
  * @version 1.1, Updated at 2013年10月20日 ,添加了专用于验证的子注解:Valid
@@ -26,6 +26,8 @@ public @interface ExcelCell {
     int index();
 
     boolean wrap() default false;
+
+    String dateFormat() default "yyyy-MM-dd";
 
     /**
      * 当值为null时要显示的值 default StringUtils.EMPTY

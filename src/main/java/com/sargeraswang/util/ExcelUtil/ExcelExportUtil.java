@@ -37,7 +37,7 @@ import java.util.Map;
  *
  * @author zhuyoufeng
  */
-public class ExcelExportUtil {
+public class ExcelExportUtil extends ExcelUtil {
 
     private static Logger LG = LoggerFactory.getLogger(ExcelExportUtil.class);
 
@@ -398,9 +398,9 @@ public class ExcelExportUtil {
 
     private static <T> void setupCellsFromBean(HSSFWorkbook workbook, HSSFRow row, HSSFCellStyle contentStyle, String pattern, T t) {
         try {
-            List<FieldForSortting> fields = sortFieldByAnno(t.getClass());
+            List<FieldForSorting> fields = sortFieldByAnno(t.getClass());
             int cellNum = 0;
-            for (FieldForSortting field1 : fields) {
+            for (FieldForSorting field1 : fields) {
                 HSSFCell cell = row.createCell(cellNum);
                 cell.setCellStyle(contentStyle);
                 Field field = field1.getField();
@@ -411,52 +411,6 @@ public class ExcelExportUtil {
             }
         } catch (Exception e) {
             LG.error(e.toString(), e);
-        }
-    }
-    /**
-     * 根据annotation的seq排序后的栏位
-     */
-    private static List<FieldForSortting> sortFieldByAnno(Class<?> clazz) {
-        Field[] fieldsArr = clazz.getDeclaredFields();
-        List<FieldForSortting> fields = new ArrayList<>();
-        List<FieldForSortting> annoNullFields = new ArrayList<>();
-        for (Field field : fieldsArr) {
-            ExcelCell ec = field.getAnnotation(ExcelCell.class);
-            if (ec == null) {
-                // 没有ExcelCell Annotation 视为不汇入
-                continue;
-            }
-            int id = ec.index();
-            fields.add(new FieldForSortting(field, id));
-        }
-        fields.addAll(annoNullFields);
-        sortByProperties(fields, true, false, "index");
-        return fields;
-    }
-
-    private static void sortByProperties(List<? extends Object> list, boolean isNullHigh, boolean isReversed, String... props) {
-        if (CollectionUtils.isNotEmpty(list)) {
-            Comparator<?> typeComp = ComparableComparator.getInstance();
-            if (isNullHigh) {
-                typeComp = ComparatorUtils.nullHighComparator(typeComp);
-            } else {
-                typeComp = ComparatorUtils.nullLowComparator(typeComp);
-            }
-            if (isReversed) {
-                typeComp = ComparatorUtils.reversedComparator(typeComp);
-            }
-
-            List<Object> sortCols = new ArrayList<Object>();
-
-            if (props != null) {
-                for (String prop : props) {
-                    sortCols.add(new BeanComparator(prop, typeComp));
-                }
-            }
-            if (sortCols.size() > 0) {
-                Comparator<Object> sortChain = new ComparatorChain(sortCols);
-                Collections.sort(list, sortChain);
-            }
         }
     }
 }
