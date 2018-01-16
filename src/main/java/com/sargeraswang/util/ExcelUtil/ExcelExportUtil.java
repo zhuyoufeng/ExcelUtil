@@ -49,7 +49,7 @@ public class ExcelExportUtil extends ExcelUtil {
      * @param out     与输出设备关联的流对象，可以将EXCEL文档导出到本地文件或者网络中
      */
     public static <T> void exportExcel(LinkedHashMap<String, String> headers, Collection<T> dataset, OutputStream out) {
-        exportExcel(null, null, headers, dataset, out, null);
+        exportExcel(null, null, headers, dataset, out);
     }
 
     /**
@@ -58,23 +58,22 @@ public class ExcelExportUtil extends ExcelUtil {
      * @param headers 表格属性列名数组
      * @param dataset 需要显示的数据集合,集合中一定要放置符合javabean风格的类的对象。此方法支持的 javabean属性的数据类型有基本数据类型及String,Date,String[],Double[]
      * @param out     与输出设备关联的流对象，可以将EXCEL文档导出到本地文件或者网络中
-     * @param pattern 如果有时间数据，设定输出格式。默认为"yyy-MM-dd"
      */
-    public static <T> void exportExcel(String sheetName, String title, LinkedHashMap<String, String> headers, Collection<T> dataset, OutputStream out, String pattern) {
+    public static <T> void exportExcel(String sheetName, String title, LinkedHashMap<String, String> headers, Collection<T> dataset, OutputStream out) {
         try {
             // 声明一个工作薄
             HSSFWorkbook workbook = new HSSFWorkbook();
             // 生成一个表格
             HSSFSheet sheet = (sheetName != null && sheetName.length() > 0) ? workbook.createSheet(sheetName) : workbook.createSheet();
-            write2Sheet(workbook, sheet, title, headers, dataset, pattern);
+            write2Sheet(workbook, sheet, title, headers, dataset);
             workbook.write(out);
         } catch (IOException e) {
             LG.error(e.toString(), e);
         }
     }
 
-    public static <T> void exportExcel(List<ExcelHeaderCell> headers, Integer headerSize, Collection<T> dataset, OutputStream out, String pattern) {
-        exportExcel(null, null, headers, headerSize, dataset, out, pattern);
+    public static <T> void exportExcel(List<ExcelHeaderCell> headers, Integer headerSize, Collection<T> dataset, OutputStream out) {
+        exportExcel(null, null, headers, headerSize, dataset, out);
     }
 
     /**
@@ -83,14 +82,13 @@ public class ExcelExportUtil extends ExcelUtil {
      * @param headers 表格属性列名数组
      * @param dataset 需要显示的数据集合,集合中一定要放置符合javabean风格的类的对象。此方法支持的 javabean属性的数据类型有基本数据类型及String,Date,String[],Double[]
      * @param out     与输出设备关联的流对象，可以将EXCEL文档导出到本地文件或者网络中
-     * @param pattern 如果有时间数据，设定输出格式。默认为"yyy-MM-dd"
      */
-    public static <T> void exportExcel(String sheetName, String title, List<ExcelHeaderCell> headers, Integer headerSize, Collection<T> dataset, OutputStream out, String pattern) {
+    public static <T> void exportExcel(String sheetName, String title, List<ExcelHeaderCell> headers, Integer headerSize, Collection<T> dataset, OutputStream out) {
         // 声明一个工作薄
         HSSFWorkbook workbook = new HSSFWorkbook();
         // 生成一个表格
         HSSFSheet sheet = (sheetName != null && sheetName.length() > 0) ? workbook.createSheet(sheetName) : workbook.createSheet();
-        write2Sheet(workbook, sheet, title, headers, headerSize, dataset, pattern);
+        write2Sheet(workbook, sheet, title, headers, headerSize, dataset);
         try {
             workbook.write(out);
         } catch (IOException e) {
@@ -125,9 +123,9 @@ public class ExcelExportUtil extends ExcelUtil {
             // 生成一个表格
             HSSFSheet hssfSheet = workbook.createSheet(sheet.getSheetName());
             if (sheet.getMapHeaders() != null) {
-                write2Sheet(workbook, hssfSheet, null, sheet.getMapHeaders(), sheet.getDataset(), pattern);
+                write2Sheet(workbook, hssfSheet, null, sheet.getMapHeaders(), sheet.getDataset());
             } else if (sheet.getDefinedHeaders() != null) {
-                write2Sheet(workbook, hssfSheet, null, sheet.getDefinedHeaders(), sheet.getHeaderSize(), sheet.getDataset(), pattern);
+                write2Sheet(workbook, hssfSheet, null, sheet.getDefinedHeaders(), sheet.getHeaderSize(), sheet.getDataset());
             }
         }
         try {
@@ -143,20 +141,15 @@ public class ExcelExportUtil extends ExcelUtil {
      * @param sheet   页签
      * @param headers 表头
      * @param dataset 数据集合
-     * @param pattern 日期格式
      */
-    private static <T> void write2Sheet(HSSFWorkbook workbook, HSSFSheet sheet, String title, LinkedHashMap<String, String> headers, Collection<T> dataset, String pattern) {
-        //时间格式默认"yyyy-MM-dd"
-        if (StringUtils.isEmpty(pattern)) {
-            pattern = "yyyy-MM-dd";
-        }
+    private static <T> void write2Sheet(HSSFWorkbook workbook, HSSFSheet sheet, String title, LinkedHashMap<String, String> headers, Collection<T> dataset) {
         HSSFCellStyle contentStyle = ExcelStyleUtil.createContentStyle(workbook);
         // 产生表格标题行
         int titleRow = setupTitleRows(workbook, sheet, title, headers.size());
         //标题列数
         int headerRow = setupHeaderRows(workbook, sheet, headers, titleRow);
         // 遍历集合数据，产生数据行
-        setupContentRows(workbook, sheet, headers, dataset, pattern, contentStyle, titleRow + headerRow);
+        setupContentRows(workbook, sheet, headers, dataset, contentStyle, titleRow + headerRow);
         // 设定自动宽度
         autoSizeColumns(sheet, headers.size());
     }
@@ -167,19 +160,14 @@ public class ExcelExportUtil extends ExcelUtil {
      * @param sheet   页签
      * @param headers 表头
      * @param dataset 数据集合
-     * @param pattern 日期格式
      */
-    private static <T> void write2Sheet(HSSFWorkbook workbook, HSSFSheet sheet, String title, List<ExcelHeaderCell> headers, Integer headerSize, Collection<T> dataset, String pattern) {
-        //时间格式默认"yyyy-MM-dd"
-        if (StringUtils.isEmpty(pattern)) {
-            pattern = "yyyy-MM-dd";
-        }
+    private static <T> void write2Sheet(HSSFWorkbook workbook, HSSFSheet sheet, String title, List<ExcelHeaderCell> headers, Integer headerSize, Collection<T> dataset) {
         // 产生表格标题行
         int titleRow = setupTitleRows(workbook, sheet, title, headerSize);
         // 标题行
         int headerRow = setupHeaderRows(workbook, sheet, headers, headerSize, titleRow);
         // 遍历集合数据，产生数据行
-        setupContentRows(workbook, sheet, headers, dataset, pattern, (headerRow + titleRow));
+        setupContentRows(workbook, sheet, headers, dataset, (headerRow + titleRow));
         // 设定自动宽度
         autoSizeColumns(sheet, headerSize);
     }
@@ -267,30 +255,31 @@ public class ExcelExportUtil extends ExcelUtil {
         return titleRow;
     }
 
-    private static <T> void setupContentRows(HSSFWorkbook workbook, HSSFSheet sheet, List<ExcelHeaderCell> headers, Collection<T> dataset, String pattern, int contentRow) {
+    private static <T> void setupContentRows(HSSFWorkbook workbook, HSSFSheet sheet, List<ExcelHeaderCell> headers, Collection<T> dataset, int contentRow) {
         HSSFCellStyle contentStyle = ExcelStyleUtil.createContentStyle(workbook);
         for (T t : dataset) {
             HSSFRow row = sheet.createRow(contentRow++);
             if (t instanceof Map) {
-                setupCellsFromMap(workbook, row, contentStyle, headers, pattern, (Map<String, Object>) t);
+                setupCellsFromMap(workbook, row, contentStyle, headers, (Map<String, Object>) t);
             } else {
-                setupCellsFromBean(workbook, row, contentStyle, pattern, t);
+                setupCellsFromBean(workbook, row, contentStyle, t);
             }
         }
     }
 
-    private static <T> void setupContentRows(HSSFWorkbook workbook, HSSFSheet sheet, LinkedHashMap<String, String> headers, Collection<T> dataset, String pattern, HSSFCellStyle contentStyle, int contentRow) {
+    private static <T> void setupContentRows(HSSFWorkbook workbook, HSSFSheet sheet, LinkedHashMap<String, String> headers, Collection<T> dataset, HSSFCellStyle contentStyle, int contentRow) {
         for (T t : dataset) {
             HSSFRow row = sheet.createRow(contentRow++);
             if (t instanceof Map) {
-                setupCellsFromMap(workbook, row, contentStyle, headers, pattern, (Map<String, Object>) t);
+                setupCellsFromMap(workbook, row, contentStyle, headers, (Map<String, Object>) t);
             } else {
-                setupCellsFromBean(workbook, row, contentStyle, pattern, t);
+                setupCellsFromBean(workbook, row, contentStyle, t);
             }
         }
     }
 
-    private static int setCellValue(HSSFWorkbook workbook, HSSFCell cell, Object value, String pattern, int cellNum, Field field, HSSFRow row) {
+    private static int setCellValue(HSSFWorkbook workbook, HSSFCell cell, Object value, int cellNum, Field field, HSSFRow row) {
+        ExcelCell anno = field.getAnnotation(ExcelCell.class);
         String textValue = null;
         if (value instanceof Integer) {
             int intValue = (Integer) value;
@@ -309,11 +298,11 @@ public class ExcelExportUtil extends ExcelUtil {
             cell.setCellValue(bValue);
         } else if (value instanceof Date) {
             Date date = (Date) value;
-            SimpleDateFormat sdf = new SimpleDateFormat(pattern);
+            SimpleDateFormat sdf = new SimpleDateFormat(anno.dateFormat());
             textValue = sdf.format(date);
         } else if (value instanceof ZonedDateTime) {
             ZonedDateTime date = (ZonedDateTime) value;
-            textValue = date.format(DateTimeFormatter.ofPattern(pattern));
+            textValue = date.format(DateTimeFormatter.ofPattern(anno.dateFormat()));
         } else if (value instanceof String[]) {
             String[] strArr = (String[]) value;
             for (int j = 0; j < strArr.length; j++) {
@@ -342,7 +331,6 @@ public class ExcelExportUtil extends ExcelUtil {
             // 其它数据类型都当作字符串简单处理
             String empty = StringUtils.EMPTY;
             if (field != null) {
-                ExcelCell anno = field.getAnnotation(ExcelCell.class);
                 if (anno != null) {
                     empty = anno.defaultValue();
                 }
@@ -351,7 +339,6 @@ public class ExcelExportUtil extends ExcelUtil {
         }
         if (textValue != null) {
             if (field != null) {
-                ExcelCell anno = field.getAnnotation(ExcelCell.class);
                 HSSFRichTextString richString = new HSSFRichTextString(textValue);
                 cell.setCellValue(richString);
                 if (anno.wrap()) {
@@ -367,7 +354,7 @@ public class ExcelExportUtil extends ExcelUtil {
         return cellNum;
     }
 
-    private static <T> void setupCellsFromMap(HSSFWorkbook workbook, HSSFRow row, HSSFCellStyle contentStyle, LinkedHashMap<String, String> headers, String pattern, Map<String, Object> t) {
+    private static <T> void setupCellsFromMap(HSSFWorkbook workbook, HSSFRow row, HSSFCellStyle contentStyle, LinkedHashMap<String, String> headers, Map<String, Object> t) {
         @SuppressWarnings("unchecked")
         Map<String, Object> map = t;
         int cellNum = 0;
@@ -376,12 +363,12 @@ public class ExcelExportUtil extends ExcelUtil {
             Object value = map.get(entry.getKey());
             HSSFCell cell = row.createCell(cellNum);
             cell.setCellStyle(contentStyle);
-            cellNum = setCellValue(workbook, cell, value, pattern, cellNum, null, row);
+            cellNum = setCellValue(workbook, cell, value, cellNum, null, row);
             cellNum++;
         }
     }
 
-    private static <T> void setupCellsFromMap(HSSFWorkbook workbook, HSSFRow row, HSSFCellStyle contentStyle, List<ExcelHeaderCell> headers, String pattern, Map<String, Object> t) {
+    private static <T> void setupCellsFromMap(HSSFWorkbook workbook, HSSFRow row, HSSFCellStyle contentStyle, List<ExcelHeaderCell> headers, Map<String, Object> t) {
         Map<String, Object> map = t;
         int cellNum = 0;
         //遍历列名
@@ -390,13 +377,13 @@ public class ExcelExportUtil extends ExcelUtil {
                 Object value = map.get(excelHeaderCell.getProperty());
                 HSSFCell cell = row.createCell(cellNum);
                 cell.setCellStyle(contentStyle);
-                cellNum = setCellValue(workbook, cell, value, pattern, cellNum, null, row);
+                cellNum = setCellValue(workbook, cell, value, cellNum, null, row);
                 cellNum++;
             }
         }
     }
 
-    private static <T> void setupCellsFromBean(HSSFWorkbook workbook, HSSFRow row, HSSFCellStyle contentStyle, String pattern, T t) {
+    private static <T> void setupCellsFromBean(HSSFWorkbook workbook, HSSFRow row, HSSFCellStyle contentStyle, T t) {
         try {
             List<FieldForSorting> fields = sortFieldByAnno(t.getClass());
             int cellNum = 0;
@@ -406,7 +393,7 @@ public class ExcelExportUtil extends ExcelUtil {
                 Field field = field1.getField();
                 field.setAccessible(true);
                 Object value = field.get(t);
-                cellNum = setCellValue(workbook, cell, value, pattern, cellNum, field, row);
+                cellNum = setCellValue(workbook, cell, value, cellNum, field, row);
                 cellNum++;
             }
         } catch (Exception e) {
