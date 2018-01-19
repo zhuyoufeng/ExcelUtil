@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The <code>ExcelUtil</code> 与 {@link ExcelCell}搭配使用
+ * The <code>ExcelImportUtil</code> 与 {@link ExcelCell}搭配使用
  *
  * @author sargeras.wang
  * @version 1.0, Created at 2013年9月14日
@@ -206,16 +206,13 @@ public class ExcelImportUtil extends ExcelUtil {
             if (annoCell != null && !annoCell.valid().allowNull()) {
                 result = MessageFormat.format("the cell [{0}] can not null", columnName);
             }
-            ;
         } else if (cell.getCellTypeEnum() == CellType.BLANK && annoCell.valid().allowNull()) {
             return null;
         } else {
             List<CellType> cellTypes = Arrays.asList(cellTypeArr);
 
             // 如果類型不在指定範圍內,並且沒有默認值
-            if (!(cellTypes.contains(cell.getCellTypeEnum()))
-                    || StringUtils.isNotBlank(annoCell.defaultValue())
-                    && cell.getCellTypeEnum() == CellType.STRING) {
+            if (!(cellTypes.contains(cell.getCellTypeEnum())) || StringUtils.isNotBlank(annoCell.defaultValue()) && cell.getCellTypeEnum() == CellType.STRING) {
                 StringBuilder strType = new StringBuilder();
                 for (int i = 0; i < cellTypes.size(); i++) {
                     CellType cellType = cellTypes.get(i);

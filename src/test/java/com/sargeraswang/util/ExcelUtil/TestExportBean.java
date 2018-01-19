@@ -38,7 +38,27 @@ public class TestExportBean {
         try {
             file.createNewFile();
             outputStream = new FileOutputStream(file);
-            ExcelExportUtil.exportExcel("学生", "学生汇总表", excelHeaderCellList, 10, new ArrayList<>(), outputStream, "yyyy-MM-dd");
+            ExcelExportUtil.exportExcel("学生", "学生汇总表", excelHeaderCellList, 10, new ArrayList<>(), outputStream);
+            outputStream.flush();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            IOUtils.closeQuietly(outputStream);
+        }
+    }
+
+    @Test
+    public void test2() {
+        List<ExcelHeaderCell> excelHeaderCellList = new ArrayList<>();
+        excelHeaderCellList.add(ExcelHeaderCell.createExcelHeaderCell("测试", 0, 1, 0, 1));
+
+        java.io.File file = new File("D:/test/temp2.xls");
+
+        java.io.OutputStream outputStream = null;
+        try {
+            file.createNewFile();
+            outputStream = new FileOutputStream(file);
+            ExcelExportUtil.exportExcel("学生", "学生汇总表", excelHeaderCellList, 1, new ArrayList<>(), outputStream);
             outputStream.flush();
         } catch (Exception e) {
             e.printStackTrace();
